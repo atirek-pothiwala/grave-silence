@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Grave Silence — Low-Poly Demo</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a0f; overflow: hidden; font-family: system-ui, sans-serif; }
+    canvas { display: block; }
+    #hud {
+      position: fixed; inset: 0; pointer-events: none; padding: 16px;
+      display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .bars { display: flex; gap: 12px; }
+    .bar-wrap { width: 120px; }
+    .bar-label { color: #9b6fd4; font-size: 10px; letter-spacing: 0.1em; margin-bottom: 4px; }
+    .bar { height: 6px; background: #2a2535; border-radius: 3px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 3px; }
+    #title { color: #e8e4f0; text-align: center; }
+    #title h1 { font-size: 14px; letter-spacing: 0.3em; color: #9b6fd4; }
+    #title p { font-size: 11px; color: #9a94a8; margin-top: 4px; }
+    #controls { color: #9a94a8; font-size: 11px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div id="hud">
+    <div class="bars">
+      <div class="bar-wrap"><div class="bar-label">VISIBILITY</div><div class="bar"><div class="bar-fill" style="width:12%;background:#9b6fd4"></div></div></div>
+      <div class="bar-wrap"><div class="bar-label">UMBRAL</div><div class="bar"><div class="bar-fill" style="width:80%;background:#7347bf"></div></div></div>
+      <div class="bar-wrap"><div class="bar-label">HEALTH</div><div class="bar"><div class="bar-fill" style="width:100%;background:#33bf73"></div></div></div>
+      <div class="bar-wrap"><div class="bar-label">ALERT</div><div class="bar"><div class="bar-fill" style="width:8%;background:#8b2030"></div></div></div>
+    </div>
+    <div id="title"><h1>GRAVE SILENCE</h1><p>Low-poly stealth demo — browser preview</p></div>
+    <div id="controls">WASD move · Mouse look · Shift sprint · Ctrl crouch</div>
+  </div>
+  <canvas id="c" width="1280" height="720"></canvas>
+  <script>
+    const W = 1280, H = 720;
+    const canvas = document.getElementById('c');
+    const ctx = canvas.getContext('2d');
+
+    const iso = (x, y, z) => ({
+      x: W/2 + (x - z) * 28,
+      y: H * 0.42 + (x + z) * 14 - y * 32
+    });
+
+    function face(points, color, stroke) {
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = 1; ctx.stroke(); }
+    }
+
+    function box(x, y, z, w, h, d, colors) {
+      const p = [
+        iso(x, y+h, z), iso(x+w, y+h, z), iso(x+w, y+h, z+d), iso(x, y+h, z+d)
+      ];
+      const l = [
+        iso(x, y, z), iso(x, y+h, z), iso(x+w, y+h, z), iso(x+w, y, z)
+      ];
+      const r = [
+        iso(x+w, y, z), iso(x+w, y+h, z), iso(x+w, y+h, z+d), iso(x+w, y, z+d)
+      ];
+      face(r, colors.right || colors.top);
+      face(l, colors.left || colors.top);
+      face(p, colors.top);
+    }
+
+    function drawScene() {
+      const grad = ctx.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0, '#0d0d18');
+      grad.addColorStop(1, '#0a0a0f');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+
+      // Moon
+      ctx.fillStyle = '#8899cc';
+      ctx.globalAlpha = 0.15;
+      ctx.beginPath(); ctx.arc(W*0.75, H*0.12, 60, 0, Math.PI*2); ctx.fill();
+      ctx.globalAlpha = 1;
+
+      box(-8, 0, -8, 16, 0.2, 16, { top: '#38383d', left: '#2e2e32', right: '#45454a' });
+
+      box(-15, 0, 4, 6, 8, 6, { top: '#615c57', left: '#4e4a46', right: '#736d67' });
+      box(-14.5, 5.5, 9.8, 5.4, 1.2, 0.2, { top: '#734738', left: '#5c382c', right: '#8a553f' });
+
+      box(10, 0, -9, 8, 12, 5, { top: '#615c57', left: '#4e4a46', right: '#736d67' });
+      box(10.5, 7, -4.2, 7.2, 1.8, 0.2, { top: '#734738', left: '#5c382c', right: '#8a553f' });
+
+      // Shadow zone
+      box(-8, 0.02, -8, 8, 0.1, 6, { top: '#140f24', left: '#0f0b1c', right: '#1a1430' });
+
+      // Extraction
+      box(15, 0, 10, 2, 1, 2, { top: '#33bf73', left: '#2a9d60', right: '#3dd684' });
+
+      // Debris
+      box(2, 0, 3, 0.5, 0.35, 0.6, { top: '#524f4a', left: '#43403c', right: '#5e5b56' });
+      box(4, 0, 2.5, 0.7, 0.45, 0.4, { top: '#524f4a', left: '#43403c', right: '#5e5b56' });
+
+      // Zombies
+      drawHumanoid(-6, 0, 2, 1, '#6b8561', '#475a3d', '#33d94d');
+      drawHumanoid(2, 0, -3, 0.95, '#6b8561', '#475a3d', '#33d94d');
+      drawHumanoid(8, 0, 5, 1.35, '#595261', '#47424d', '#f23326');
+
+      // Player in shadow with umbral ring
+      drawHumanoid(-3.5, 0, -1, 1, '#2e2447', '#b8947a', null);
+      const pr = iso(-3.5, 0.05, -1);
+      ctx.strokeStyle = '#7347bf';
+      ctx.globalAlpha = 0.6;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let i = 0; i <= 6; i++) {
+        const a = (i / 6) * Math.PI * 2;
+        const px = pr.x + Math.cos(a) * 22;
+        const py = pr.y + Math.sin(a) * 11;
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      window.sceneReady = true;
+    }
+
+    function drawHumanoid(x, y, z, scale, body, head, eye) {
+      const s = scale;
+      box(x-0.35*s, y, z-0.2*s, 0.7*s, 1.0*s, 0.4*s, { top: body, left: shade(body,-20), right: shade(body,15) });
+      box(x-0.22*s, y+1.0*s, z-0.2*s, 0.45*s, 0.45*s, 0.4*s, { top: head, left: shade(head,-15), right: shade(head,10) });
+      box(x-0.1*s, y+1.35*s, z+0.02*s, 0.12*s, 0.08*s, 0.05*s, { top: eye || '#33d94d', left: eye || '#33d94d', right: eye || '#33d94d' });
+      box(x-0.5*s, y+0.45*s, z-0.1*s, 0.2*s, 0.7*s, 0.2*s, { top: body, left: shade(body,-20), right: shade(body,15) });
+      box(x+0.3*s, y+0.45*s, z-0.1*s, 0.2*s, 0.7*s, 0.2*s, { top: body, left: shade(body,-20), right: shade(body,15) });
+    }
+
+    function shade(hex, amt) {
+      const n = parseInt(hex.slice(1), 16);
+      const r = Math.max(0, Math.min(255, ((n>>16)&255)+amt));
+      const g = Math.max(0, Math.min(255, ((n>>8)&255)+amt));
+      const b = Math.max(0, Math.min(255, (n&255)+amt));
+      return `rgb(${r},${g},${b})`;
+    }
+
+    drawScene();
+  </script>
+</body>
+</html>
