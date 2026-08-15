@@ -1,5 +1,7 @@
 using UnityEngine;
+using GraveSilence.Core;
 using GraveSilence.Enemies;
+using GraveSilence.Environment;
 using GraveSilence.Systems;
 
 namespace GraveSilence.Player
@@ -13,7 +15,7 @@ namespace GraveSilence.Player
         [Header("Umbral Step (Teleport)")]
         [SerializeField] private float stepRange = 12f;
         [SerializeField] private float stepCooldown = 3f;
-        [SerializeField] private LayerMask stepObstacleMask;
+        [SerializeField] private LayerMask aimMask = ~0;
         [SerializeField] private GameObject stepVfxPrefab;
 
         [Header("Umbral Cloak (Invisibility)")]
@@ -40,6 +42,7 @@ namespace GraveSilence.Player
 
         private StealthController stealth;
         private CharacterController controller;
+        private UnityEngine.Camera aimCamera;
         private float umbralEnergy;
         private float stepTimer;
         private float cloakTimer;
@@ -51,6 +54,10 @@ namespace GraveSilence.Player
         public float UmbralEnergy => umbralEnergy;
         public float UmbralEnergyNormalized => umbralEnergy / maxUmbralEnergy;
         public bool CanUseAbilities => umbralEnergy > 0f;
+        public float StepCooldownRemaining => stepTimer;
+        public float CloakCooldownRemaining => cloakTimer;
+        public float LureCooldownRemaining => lureTimer;
+        public float StrikeCooldownRemaining => strikeTimer;
 
         public event System.Action<float> OnEnergyChanged;
         public event System.Action<string> OnAbilityUsed;
@@ -59,7 +66,17 @@ namespace GraveSilence.Player
         {
             stealth = GetComponent<StealthController>();
             controller = GetComponent<CharacterController>();
+            aimCamera = UnityEngine.Camera.main;
             umbralEnergy = maxUmbralEnergy;
+
+            if (stealth != null)
+                stealth.OnCloakBroken += HandleCloakBroken;
+        }
+
+        private void OnDestroy()
+        {
+            if (stealth != null)
+                stealth.OnCloakBroken -= HandleCloakBroken;
         }
 
         private void Update()
@@ -70,7 +87,7 @@ namespace GraveSilence.Player
             strikeTimer = Mathf.Max(0f, strikeTimer - Time.deltaTime);
 
             if (stealth != null && stealth.IsCloaked && Time.time >= cloakEndTime)
-                EndCloak();
+                stealth.SetCloaked(false);
 
             RegenerateEnergy();
         }
@@ -79,14 +96,20 @@ namespace GraveSilence.Player
         {
             if (stepTimer > 0f || umbralEnergy < stepEnergyCost) return false;
 
-            Vector3 target = GetStepTarget();
-            if (target == Vector3.zero) return false;
+            if (!AimHelper.TryGetAimHit(aimCamera, stepRange, aimMask, out RaycastHit hit))
+                return false;
+
+            bool validTarget = hit.collider.CompareTag(GameConstants.ShadowZoneTag)
+                                 || hit.collider.CompareTag(GameConstants.GroundTag)
+                                 || hit.collider.GetComponent<ShadowZone>() != null;
+
+            if (!validTarget) return false;
 
             if (stepVfxPrefab != null)
                 Instantiate(stepVfxPrefab, transform.position, Quaternion.identity);
 
             controller.enabled = false;
-            transform.position = target;
+            transform.position = hit.point;
             controller.enabled = true;
 
             SpendEnergy(stepEnergyCost);
@@ -112,8 +135,9 @@ namespace GraveSilence.Player
         {
             if (lureTimer > 0f || umbralEnergy < lureEnergyCost) return false;
 
-            Vector3 lurePoint = GetLureTarget();
-            if (lurePoint == Vector3.zero) return false;
+            Vector3 lurePoint = AimHelper.TryGetAimPoint(aimCamera, lureRange, aimMask, out Vector3 point)
+                ? point
+                : transform.position + transform.forward * 5f;
 
             if (activeLure != null) Destroy(activeLure);
 
@@ -133,60 +157,51 @@ namespace GraveSilence.Player
         public bool TryUmbralStrike()
         {
             if (strikeTimer > 0f || umbralEnergy < strikeEnergyCost) return false;
+            if (stealth == null || (!stealth.IsInShadow && !stealth.IsCloaked)) return false;
 
             ZombieBase target = FindStrikeTarget();
             if (target == null) return false;
-            if (!stealth.IsInShadow && !stealth.IsCloaked) return false;
 
             target.ExecuteStealthKill(transform);
+            MissionScore.Instance?.RegisterSilentKill();
             SpendEnergy(strikeEnergyCost);
             strikeTimer = strikeCooldown;
             OnAbilityUsed?.Invoke("Umbral Strike");
             return true;
         }
 
-        private Vector3 GetStepTarget()
-        {
-            Ray ray = Camera.main != null
-                ? Camera.main.ScreenPointToRay(Input.mousePosition)
-                : new Ray(transform.position + Vector3.up, transform.forward);
-
-            if (!Physics.Raycast(ray, out RaycastHit hit, stepRange, ~stepObstacleMask))
-                return Vector3.zero;
-
-            if (!hit.collider.CompareTag("ShadowZone") && !hit.collider.CompareTag("Ground"))
-                return Vector3.zero;
-
-            return hit.point;
-        }
-
-        private Vector3 GetLureTarget()
-        {
-            Ray ray = Camera.main != null
-                ? Camera.main.ScreenPointToRay(Input.mousePosition)
-                : new Ray(transform.position + Vector3.up * 2f, transform.forward);
-
-            if (Physics.Raycast(ray, out RaycastHit hit, lureRange))
-                return hit.point;
-
-            return transform.position + transform.forward * 5f;
-        }
-
         private ZombieBase FindStrikeTarget()
         {
             Collider[] hits = Physics.OverlapSphere(transform.position, strikeRange);
+            ZombieBase closest = null;
+            float closestDist = float.MaxValue;
+
             foreach (var hit in hits)
             {
                 var zombie = hit.GetComponent<ZombieBase>();
-                if (zombie != null && zombie.CanBeStealthKilled)
-                    return zombie;
+                if (zombie == null || !zombie.CanBeStealthKilled) continue;
+
+                float dist = Vector3.Distance(transform.position, zombie.transform.position);
+                if (dist < closestDist)
+                {
+                    closest = zombie;
+                    closestDist = dist;
+                }
             }
-            return null;
+
+            return closest;
         }
 
-        private void EndCloak()
+        private void HandleCloakBroken()
         {
-            stealth?.SetCloaked(false);
+            cloakEndTime = 0f;
+        }
+
+        public bool TrySpendEnergy(float amount)
+        {
+            if (umbralEnergy < amount) return false;
+            SpendEnergy(amount);
+            return true;
         }
 
         private void SpendEnergy(float amount)
@@ -200,7 +215,8 @@ namespace GraveSilence.Player
             if (umbralEnergy >= maxUmbralEnergy) return;
 
             float regenMultiplier = stealth != null && stealth.IsInShadow ? 2f : 1f;
-            umbralEnergy = Mathf.Min(maxUmbralEnergy, umbralEnergy + energyRegenRate * regenMultiplier * Time.deltaTime);
+            umbralEnergy = Mathf.Min(maxUmbralEnergy,
+                umbralEnergy + energyRegenRate * regenMultiplier * Time.deltaTime);
             OnEnergyChanged?.Invoke(UmbralEnergyNormalized);
         }
     }

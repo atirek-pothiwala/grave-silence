@@ -22,6 +22,7 @@ namespace GraveSilence.Core
         public InputAction Ability2Action { get; private set; }
         public InputAction Ability3Action { get; private set; }
         public InputAction Ability4Action { get; private set; }
+        public InputAction SpiritVisionAction { get; private set; }
         public InputAction PauseAction { get; private set; }
 
         private void Awake()
@@ -61,6 +62,7 @@ namespace GraveSilence.Core
             Ability2Action = playerMap.FindAction("Ability2", true);
             Ability3Action = playerMap.FindAction("Ability3", true);
             Ability4Action = playerMap.FindAction("Ability4", true);
+            SpiritVisionAction = playerMap.FindAction("SpiritVision", true);
             PauseAction = playerMap.FindAction("Pause", true);
         }
     }

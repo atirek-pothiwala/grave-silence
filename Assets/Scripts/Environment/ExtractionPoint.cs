@@ -12,25 +12,53 @@ namespace GraveSilence.Environment
         [SerializeField] private bool requiresAllObjectives = true;
         [SerializeField] private GameObject activeIndicator;
 
+        private bool playerInside;
+
         private void Awake()
         {
             GetComponent<Collider>().isTrigger = true;
         }
 
+        private void OnEnable()
+        {
+            if (ObjectiveTracker.Instance != null)
+                ObjectiveTracker.Instance.OnAllRequiredComplete += ShowIndicator;
+        }
+
+        private void OnDisable()
+        {
+            if (ObjectiveTracker.Instance != null)
+                ObjectiveTracker.Instance.OnAllRequiredComplete -= ShowIndicator;
+        }
+
         private void OnTriggerEnter(Collider other)
         {
-            if (!other.CompareTag("Player")) return;
+            if (!other.CompareTag(GameConstants.PlayerTag)) return;
+            playerInside = true;
+            TryExtract();
+        }
 
-            if (requiresAllObjectives && !AreObjectivesComplete())
+        private void OnTriggerExit(Collider other)
+        {
+            if (other.CompareTag(GameConstants.PlayerTag))
+                playerInside = false;
+        }
+
+        private void ShowIndicator()
+        {
+            if (activeIndicator != null)
+                activeIndicator.SetActive(true);
+        }
+
+        private void TryExtract()
+        {
+            if (!playerInside) return;
+
+            if (requiresAllObjectives && ObjectiveTracker.Instance != null
+                && !ObjectiveTracker.Instance.AllRequiredObjectivesComplete)
                 return;
 
             GameManager.Instance?.CompleteMission();
-        }
-
-        private bool AreObjectivesComplete()
-        {
-            // Extend with ObjectiveTracker when mission objectives are wired up.
-            return true;
         }
 
         private void OnDrawGizmos()

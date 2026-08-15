@@ -87,6 +87,15 @@
                     "initialStateCheck": false
                 },
                 {
+                    "name": "SpiritVision",
+                    "type": "Button",
+                    "id": "f1a2b3c4-d5e6-7890-1234-567890abcdef",
+                    "expectedControlType": "Button",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Pause",
                     "type": "Button",
                     "id": "e1f2a3b4-c5d6-7890-4567-901234567890",
@@ -237,6 +246,17 @@
                     "processors": "",
                     "groups": "Keyboard&Mouse",
                     "action": "Ability4",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b6c7d8e9-f0a1-2345-9012-345678901234",
+                    "path": "<Keyboard>/tab",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard&Mouse",
+                    "action": "SpiritVision",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

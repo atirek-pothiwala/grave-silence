@@ -32,6 +32,8 @@ A third-person stealth action game inspired by **Aragami 2**, set in a post-apoc
 | Sprint | Left Shift |
 | Crouch | Left Ctrl |
 | Stealth Takedown | E |
+| Spirit Vision | Tab |
+| Pause | Escape |
 | Umbral Step | Q |
 | Umbral Cloak | F |
 | Umbral Lure | R |
@@ -55,6 +57,10 @@ A third-person stealth action game inspired by **Aragami 2**, set in a post-apoc
 4. Open or create a scene and follow **Scene Setup** below
 5. Bake a NavMesh for zombie pathfinding (Window → AI → Navigation)
 
+### Quick Setup (Editor)
+
+Use **Grave Silence → Create Systems Hierarchy** and **Grave Silence → Create Player** from the menu bar.
+
 ### Scene Setup
 
 Create these GameObjects in your test scene:
@@ -65,13 +71,16 @@ Scene Hierarchy
 │   ├── GameManager          (GameManager.cs)
 │   ├── InputManager         (InputManager.cs + GraveSilence.inputactions)
 │   ├── NoiseSystem          (NoiseSystem.cs)
-│   └── AlertSystem          (AlertSystem.cs)
+│   ├── AlertSystem          (AlertSystem.cs)
+│   ├── ObjectiveTracker     (ObjectiveTracker.cs)
+│   └── MissionScore         (MissionScore.cs)
 ├── --- Player ---
 │   └── Player               (Tag: "Player")
 │       ├── ThirdPersonController
 │       ├── StealthController
 │       ├── UmbralAbilities
 │       ├── StealthTakedown
+│       ├── SpiritVision
 │       ├── PlayerHealth
 │       ├── PlayerInputHandler
 │       └── CharacterController

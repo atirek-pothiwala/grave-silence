@@ -1,11 +1,12 @@
 using UnityEngine;
 using UnityEngine.AI;
+using GraveSilence.Core;
 using GraveSilence.Player;
 using GraveSilence.Systems;
 
 namespace GraveSilence.Enemies
 {
-  public enum ZombieState
+    public enum ZombieState
     {
         Idle,
         Patrol,
@@ -18,10 +19,10 @@ namespace GraveSilence.Enemies
 
     public enum ZombieType
     {
-        Shambler,   // Slow, low awareness — easy to sneak past
-        Runner,     // Fast, moderate awareness
-        Screamer,   // Alerts horde on detection
-        Brute       // Heavy, hard to stealth kill
+        Shambler,
+        Runner,
+        Screamer,
+        Brute
     }
 
     /// <summary>
@@ -48,14 +49,9 @@ namespace GraveSilence.Enemies
         [SerializeField] protected float hearingRange = 8f;
         [SerializeField] protected float investigationDuration = 5f;
         [SerializeField] protected float awarenessDecayRate = 0.15f;
-        [SerializeField] protected LayerMask sightObstacleMask;
-
-        [Header("Patrol")]
-        [SerializeField] protected Transform[] patrolPoints;
-        [SerializeField] protected float patrolWaitTime = 2f;
+        [SerializeField] protected float fullAwarenessRate = 2f;
 
         protected NavMeshAgent agent;
-        protected ZombieDetection detection;
         protected Transform player;
         protected float health;
         protected float awareness;
@@ -64,11 +60,16 @@ namespace GraveSilence.Enemies
         protected float patrolWaitTimer;
         protected int patrolIndex;
         protected ZombieState currentState = ZombieState.Patrol;
-        protected Vector3 lastKnownPlayerPosition;
         protected Vector3 investigateTarget;
 
+        [Header("Patrol")]
+        [SerializeField] protected Transform[] patrolPoints;
+        [SerializeField] protected float patrolWaitTime = 2f;
+
         public ZombieState CurrentState => currentState;
+        public ZombieType Type => zombieType;
         public float Awareness => awareness;
+        public event System.Action<ZombieBase> OnDeath;
         public bool CanBeStealthKilled => currentState != ZombieState.Chase
                                           && currentState != ZombieState.Attack
                                           && currentState != ZombieState.Dead
@@ -78,17 +79,21 @@ namespace GraveSilence.Enemies
         protected virtual void Awake()
         {
             agent = GetComponent<NavMeshAgent>();
-            detection = GetComponent<ZombieDetection>();
             health = maxHealth;
             agent.speed = walkSpeed;
         }
 
         protected virtual void Start()
         {
-            var playerObj = GameObject.FindGameObjectWithTag("Player");
-            if (playerObj != null) player = playerObj.transform;
+            player = PlayerReference.Transform;
+            if (player == null)
+            {
+                var playerObj = GameObject.FindGameObjectWithTag(GameConstants.PlayerTag);
+                if (playerObj != null) player = playerObj.transform;
+            }
 
             AlertSystem.Instance?.RegisterZombie(this);
+            InitializePatrol();
         }
 
         protected virtual void OnDestroy()
@@ -114,13 +119,10 @@ namespace GraveSilence.Enemies
 
             if (CanSeePlayer(distance, visibility))
             {
-                awareness = Mathf.Clamp01(awareness + visibility * Time.deltaTime * 2f);
-                lastKnownPlayerPosition = player.position;
+                awareness = Mathf.Clamp01(awareness + visibility * Time.deltaTime * fullAwarenessRate);
 
-                if (awareness >= 1f && currentState != ZombieState.Chase)
-                {
+                if (awareness >= 1f && currentState != ZombieState.Chase && currentState != ZombieState.Attack)
                     OnPlayerDetected();
-                }
             }
             else
             {
@@ -134,12 +136,17 @@ namespace GraveSilence.Enemies
         {
             if (distance > sightRange || visibility < 0.05f) return false;
 
-            Vector3 direction = (player.position - transform.position).normalized;
+            Vector3 eyePos = transform.position + Vector3.up * 1.5f;
+            Vector3 targetPos = player.position + Vector3.up;
+            Vector3 direction = targetPos - eyePos;
+            float dist = direction.magnitude;
+            direction.Normalize();
+
             float angle = Vector3.Angle(transform.forward, direction);
             if (angle > sightAngle * 0.5f) return false;
 
-            if (Physics.Raycast(transform.position + Vector3.up, direction, distance, sightObstacleMask))
-                return false;
+            if (Physics.Raycast(eyePos, direction, out RaycastHit hit, dist))
+                return hit.transform == player || hit.transform.IsChildOf(player);
 
             return true;
         }
@@ -168,18 +175,10 @@ namespace GraveSilence.Enemies
         {
             switch (currentState)
             {
-                case ZombieState.Patrol:
-                    UpdatePatrol();
-                    break;
-                case ZombieState.Investigate:
-                    UpdateInvestigate();
-                    break;
-                case ZombieState.Chase:
-                    UpdateChase();
-                    break;
-                case ZombieState.Attack:
-                    UpdateAttack();
-                    break;
+                case ZombieState.Patrol: UpdatePatrol(); break;
+                case ZombieState.Investigate: UpdateInvestigate(); break;
+                case ZombieState.Chase: UpdateChase(); break;
+                case ZombieState.Attack: UpdateAttack(); break;
             }
         }
 
@@ -193,7 +192,8 @@ namespace GraveSilence.Enemies
                 if (patrolWaitTimer <= 0f)
                 {
                     patrolIndex = (patrolIndex + 1) % patrolPoints.Length;
-                    agent.SetDestination(patrolPoints[patrolIndex].position);
+                    if (patrolPoints[patrolIndex] != null)
+                        agent.SetDestination(patrolPoints[patrolIndex].position);
                     patrolWaitTimer = patrolWaitTime;
                 }
             }
@@ -223,13 +223,16 @@ namespace GraveSilence.Enemies
         {
             if (player == null) return;
 
-            transform.LookAt(new Vector3(player.position.x, transform.position.y, player.position.z));
+            Vector3 lookTarget = new(player.position.x, transform.position.y, player.position.z);
+            transform.LookAt(lookTarget);
 
             if (Vector3.Distance(transform.position, player.position) > attackRange * 1.5f)
             {
                 SetState(ZombieState.Chase);
                 return;
             }
+
+            agent.isStopped = true;
 
             if (attackTimer <= 0f)
             {
@@ -240,13 +243,13 @@ namespace GraveSilence.Enemies
 
         protected virtual void PerformAttack()
         {
-            var playerHealth = player?.GetComponent<PlayerHealth>();
-            playerHealth?.TakeDamage(attackDamage);
+            player?.GetComponent<PlayerHealth>()?.TakeDamage(attackDamage);
         }
 
         protected virtual void OnPlayerDetected()
         {
             SetState(ZombieState.Chase);
+            MissionScore.Instance?.RegisterEnemyAlerted();
             AlertSystem.Instance?.RaiseAlert(transform.position, 0.3f, this);
 
             if (zombieType == ZombieType.Screamer)
@@ -260,6 +263,7 @@ namespace GraveSilence.Enemies
         {
             awareness = Mathf.Clamp01(awareness + amount);
             investigateTarget = origin;
+
             if (currentState == ZombieState.Patrol || currentState == ZombieState.Idle)
             {
                 SetState(ZombieState.Investigate);
@@ -288,13 +292,35 @@ namespace GraveSilence.Enemies
             currentState = ZombieState.Dead;
             agent.isStopped = true;
             agent.enabled = false;
-            GetComponent<Collider>()?.gameObject.SetActive(false);
+
+            foreach (var col in GetComponents<Collider>())
+                col.enabled = false;
+
+            OnDeath?.Invoke(this);
         }
 
         protected void SetState(ZombieState newState)
         {
+            if (currentState == newState) return;
             currentState = newState;
-            agent.isStopped = newState == ZombieState.Dead;
+            agent.isStopped = newState == ZombieState.Attack || newState == ZombieState.Dead;
+
+            if (newState != ZombieState.Attack && newState != ZombieState.Dead)
+                agent.isStopped = false;
+        }
+
+        private void InitializePatrol()
+        {
+            if (patrolPoints == null || patrolPoints.Length == 0)
+            {
+                SetState(ZombieState.Idle);
+                return;
+            }
+
+            patrolIndex = 0;
+            patrolWaitTimer = 0f;
+            if (patrolPoints[0] != null)
+                agent.SetDestination(patrolPoints[0].position);
         }
 
         private void OnDrawGizmosSelected()

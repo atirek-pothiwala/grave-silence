@@ -12,6 +12,7 @@ namespace GraveSilence.Player
         [SerializeField] private ThirdPersonController movement;
         [SerializeField] private UmbralAbilities abilities;
         [SerializeField] private StealthTakedown takedown;
+        [SerializeField] private SpiritVision spiritVision;
 
         private InputManager input;
 
@@ -20,6 +21,7 @@ namespace GraveSilence.Player
             movement ??= GetComponent<ThirdPersonController>();
             abilities ??= GetComponent<UmbralAbilities>();
             takedown ??= GetComponent<StealthTakedown>();
+            spiritVision ??= GetComponent<SpiritVision>();
         }
 
         private void OnEnable()
@@ -36,6 +38,7 @@ namespace GraveSilence.Player
             input.Ability2Action.performed += OnAbility2;
             input.Ability3Action.performed += OnAbility3;
             input.Ability4Action.performed += OnAbility4;
+            input.SpiritVisionAction.performed += OnSpiritVision;
             input.PauseAction.performed += OnPause;
         }
 
@@ -52,12 +55,15 @@ namespace GraveSilence.Player
             input.Ability2Action.performed -= OnAbility2;
             input.Ability3Action.performed -= OnAbility3;
             input.Ability4Action.performed -= OnAbility4;
+            input.SpiritVisionAction.performed -= OnSpiritVision;
             input.PauseAction.performed -= OnPause;
         }
 
         private void Update()
         {
             if (input == null || movement == null) return;
+            if (GameManager.Instance != null && GameManager.Instance.IsPaused) return;
+
             movement.Move(input.MoveAction.ReadValue<Vector2>());
         }
 
@@ -70,6 +76,7 @@ namespace GraveSilence.Player
         private void OnAbility2(InputAction.CallbackContext _) => abilities?.TryUmbralCloak();
         private void OnAbility3(InputAction.CallbackContext _) => abilities?.TryUmbralLure();
         private void OnAbility4(InputAction.CallbackContext _) => abilities?.TryUmbralStrike();
+        private void OnSpiritVision(InputAction.CallbackContext _) => spiritVision?.TryActivate();
         private void OnPause(InputAction.CallbackContext _) => GameManager.Instance?.TogglePause();
     }
 }

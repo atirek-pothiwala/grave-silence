@@ -7,7 +7,7 @@ namespace GraveSilence.Player
     /// Supports walk, sprint, crouch, and rotation toward camera direction.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
-  public class ThirdPersonController : MonoBehaviour
+    public class ThirdPersonController : MonoBehaviour
     {
         [Header("Movement")]
         [SerializeField] private float walkSpeed = 3.5f;
@@ -15,6 +15,8 @@ namespace GraveSilence.Player
         [SerializeField] private float crouchSpeed = 2f;
         [SerializeField] private float rotationSmoothTime = 0.12f;
         [SerializeField] private float gravity = -20f;
+        [SerializeField] private float standingHeight = 1.8f;
+        [SerializeField] private float crouchHeight = 1.2f;
 
         [Header("References")]
         [SerializeField] private Transform cameraTarget;
@@ -25,24 +27,26 @@ namespace GraveSilence.Player
         private float rotationVelocity;
         private bool isSprinting;
         private bool isCrouching;
+        private Vector3 lastMoveDirection;
 
-        public bool IsMoving => controller.velocity.sqrMagnitude > 0.1f;
+        public bool IsMoving => lastMoveDirection.sqrMagnitude > 0.01f;
         public bool IsSprinting => isSprinting && IsMoving;
         public bool IsCrouching => isCrouching;
         public float CurrentSpeed => controller.velocity.magnitude;
+        public Transform CameraTarget => cameraTarget;
 
         private void Awake()
         {
             controller = GetComponent<CharacterController>();
-            if (stealthController == null)
-                stealthController = GetComponent<StealthController>();
+            stealthController ??= GetComponent<StealthController>();
         }
 
         private void Update()
         {
             ApplyGravity();
-            HandleMovement();
         }
+
+        public void SetCameraTarget(Transform target) => cameraTarget = target;
 
         public void SetSprinting(bool sprinting)
         {
@@ -54,14 +58,18 @@ namespace GraveSilence.Player
             isCrouching = crouching;
             if (isCrouching) isSprinting = false;
 
-            float targetHeight = isCrouching ? 1.2f : 1.8f;
+            float targetHeight = isCrouching ? crouchHeight : standingHeight;
             controller.height = Mathf.Lerp(controller.height, targetHeight, Time.deltaTime * 10f);
             controller.center = new Vector3(0f, controller.height * 0.5f, 0f);
         }
 
         public void Move(Vector2 input)
         {
-            if (input.sqrMagnitude < 0.01f) return;
+            if (input.sqrMagnitude < 0.01f)
+            {
+                lastMoveDirection = Vector3.zero;
+                return;
+            }
 
             float targetSpeed = isCrouching ? crouchSpeed : (isSprinting ? sprintSpeed : walkSpeed);
             Vector3 inputDirection = new Vector3(input.x, 0f, input.y).normalized;
@@ -74,16 +82,16 @@ namespace GraveSilence.Player
                     ref rotationVelocity, rotationSmoothTime);
                 transform.rotation = Quaternion.Euler(0f, angle, 0f);
 
-                Vector3 moveDirection = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
-                controller.Move(moveDirection * (targetSpeed * Time.deltaTime));
+                lastMoveDirection = Quaternion.Euler(0f, targetAngle, 0f) * Vector3.forward;
+                controller.Move(lastMoveDirection * (targetSpeed * Time.deltaTime));
             }
             else
             {
-                controller.Move(transform.TransformDirection(inputDirection) * (targetSpeed * Time.deltaTime));
+                lastMoveDirection = transform.TransformDirection(inputDirection);
+                controller.Move(lastMoveDirection * (targetSpeed * Time.deltaTime));
             }
 
-            if (stealthController != null)
-                stealthController.RegisterMovementNoise(targetSpeed, isCrouching);
+            stealthController?.RegisterMovementNoise(targetSpeed, isCrouching);
         }
 
         private void ApplyGravity()
@@ -93,11 +101,6 @@ namespace GraveSilence.Player
 
             velocity.y += gravity * Time.deltaTime;
             controller.Move(velocity * Time.deltaTime);
-        }
-
-        private void HandleMovement()
-        {
-            // Input is driven by PlayerInputHandler when Input System is wired up.
         }
     }
 }

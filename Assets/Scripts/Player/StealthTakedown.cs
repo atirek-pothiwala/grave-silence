@@ -1,4 +1,5 @@
 using UnityEngine;
+using GraveSilence.Core;
 using GraveSilence.Enemies;
 
 namespace GraveSilence.Player
@@ -23,6 +24,7 @@ namespace GraveSilence.Player
             if (target == null) return false;
 
             target.ExecuteStealthKill(transform);
+            MissionScore.Instance?.RegisterSilentKill();
             return true;
         }
 
