@@ -1,0 +1,238 @@
+:root {
+  --bg-deep: #0a0a0f;
+  --bg-card: #12121a;
+  --umbral: #6b4c9a;
+  --umbral-glow: #9b6fd4;
+  --blood: #8b2030;
+  --text: #e8e4f0;
+  --text-muted: #9a94a8;
+  --border: #2a2535;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg-deep);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(107, 76, 154, 0.25), transparent),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(139, 32, 48, 0.15), transparent);
+  pointer-events: none;
+  z-index: -1;
+}
+
+a {
+  color: var(--umbral-glow);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+a:hover {
+  color: #c4a0f0;
+}
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* Header */
+header {
+  padding: 4rem 0 3rem;
+  text-align: center;
+}
+
+.logo {
+  font-size: 0.85rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: var(--umbral-glow);
+  margin-bottom: 0.75rem;
+}
+
+h1 {
+  font-size: clamp(2.5rem, 6vw, 4rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 1rem;
+}
+
+.tagline {
+  font-size: 1.15rem;
+  color: var(--text-muted);
+  max-width: 540px;
+  margin: 0 auto 2rem;
+}
+
+.cta-row {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--umbral), #4a3570);
+  color: white;
+  box-shadow: 0 4px 20px rgba(107, 76, 154, 0.4);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 6px 28px rgba(155, 111, 212, 0.5);
+  color: white;
+}
+
+.btn-outline {
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.btn-outline:hover {
+  border-color: var(--umbral);
+  color: var(--umbral-glow);
+}
+
+/* Sections */
+section {
+  padding: 3rem 0;
+}
+
+section h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: var(--umbral-glow);
+}
+
+/* Ability cards */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+  transition: border-color 0.2s;
+}
+
+.card:hover {
+  border-color: var(--umbral);
+}
+
+.card h3 {
+  font-size: 1rem;
+  margin-bottom: 0.35rem;
+}
+
+.card .key {
+  display: inline-block;
+  background: var(--border);
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-family: monospace;
+  margin-bottom: 0.5rem;
+}
+
+.card p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+th, td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  color: var(--umbral-glow);
+  font-weight: 600;
+}
+
+/* Zombie list */
+.zombie-list {
+  list-style: none;
+}
+
+.zombie-list li {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+}
+
+.zombie-list strong {
+  min-width: 6rem;
+  color: var(--blood);
+}
+
+/* Status badge */
+.status {
+  display: inline-block;
+  background: rgba(107, 76, 154, 0.2);
+  border: 1px solid var(--umbral);
+  color: var(--umbral-glow);
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  margin-top: 1rem;
+}
+
+/* Footer */
+footer {
+  padding: 3rem 0;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--border);
+  margin-top: 2rem;
+}
+
+footer a {
+  margin: 0 0.5rem;
+}

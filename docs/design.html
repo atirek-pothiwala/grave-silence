@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design Doc — Grave Silence</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .prose { max-width: 720px; margin: 0 auto; padding: 2rem 0 4rem; }
+    .prose h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+    .prose h2 { font-size: 1.25rem; margin: 2rem 0 0.75rem; color: var(--umbral-glow); }
+    .prose h3 { font-size: 1.05rem; margin: 1.5rem 0 0.5rem; }
+    .prose p, .prose li { color: var(--text-muted); margin-bottom: 0.75rem; }
+    .prose ul { padding-left: 1.25rem; margin-bottom: 1rem; }
+    .prose code { background: var(--bg-card); padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.9em; }
+    .back { display: inline-block; margin-bottom: 1.5rem; }
+  </style>
+</head>
+<body>
+  <div class="container prose">
+    <a class="back" href="index.html">← Back to home</a>
+
+    <h1>Game Design Document</h1>
+    <p>Grave Silence — Aragami 2-style stealth in a zombie apocalypse.</p>
+
+    <h2>Vision</h2>
+    <p>
+      Grave Silence captures the feel of Aragami 2 — fluid movement, shadow-based supernatural powers,
+      and rewarding ghost play — transplanted into a zombie apocalypse. The player is an "Umbral Walker,"
+      someone who can slip between shadows while the dead hunt by sight and sound.
+    </p>
+
+    <h2>Design Pillars</h2>
+    <ul>
+      <li><strong>Power fantasy through stealth</strong> — Feel like a predator, not a survivor with a gun.</li>
+      <li><strong>Readable enemy behavior</strong> — Zombies telegraph awareness clearly.</li>
+      <li><strong>Meaningful darkness</strong> — Light and shadow are gameplay mechanics.</li>
+      <li><strong>Consequence for mistakes</strong> — Alerting the horde is recoverable but costly.</li>
+    </ul>
+
+    <h2>Umbral Powers</h2>
+
+    <h3>Umbral Step (Q)</h3>
+    <p>Teleport to a shadow zone within range. Cost: 20 energy · Cooldown: 3s · Range: 12m</p>
+
+    <h3>Umbral Cloak (F)</h3>
+    <p>Become invisible in shadow zones. Cost: 35 energy · Cooldown: 15s · Duration: 5s</p>
+
+    <h3>Umbral Lure (R)</h3>
+    <p>Place a decoy that emits noise. Cost: 25 energy · Cooldown: 10s · Duration: 8s</p>
+
+    <h3>Umbral Strike (Right Mouse)</h3>
+    <p>Instant stealth kill on unaware zombies. Cost: 15 energy · Range: 2.5m</p>
+
+    <h2>Enemy Awareness</h2>
+    <p>Patrol → Investigate (heard noise) → Chase → Attack. Awareness decays over time when the player is hidden.</p>
+
+    <h3>Detection Inputs</h3>
+    <ul>
+      <li><strong>Sight</strong> — Cone-based, modified by player visibility</li>
+      <li><strong>Hearing</strong> — Footsteps, traps, lures, screams</li>
+      <li><strong>Alert propagation</strong> — Nearby zombies are alerted when one detects the player</li>
+    </ul>
+
+    <h2>Level Design Guidelines</h2>
+    <ul>
+      <li>Every encounter should have at least 2 solutions: bypass or eliminate</li>
+      <li>Shadow highways — connected dark routes through the level</li>
+      <li>Verticality — rooftops, fire escapes, broken floors</li>
+      <li>Screamers placed to punish direct routes</li>
+    </ul>
+
+    <h2>Reference Games</h2>
+    <ul>
+      <li><strong>Aragami 2</strong> — Core stealth loop, shadow powers, mission structure</li>
+      <li><strong>The Last of Us</strong> — Zombie threat, environmental storytelling</li>
+      <li><strong>Dishonored</strong> — Multiple approaches, awareness system</li>
+      <li><strong>Mark of the Ninja</strong> — Clarity of stealth feedback</li>
+    </ul>
+
+    <p style="margin-top: 2rem;">
+      <a href="https://github.com/atirek-pothiwala/grave-silence/blob/main/docs/DESIGN.md">View full markdown on GitHub</a>
+    </p>
+  </div>
+</body>
+</html>
