@@ -28,7 +28,7 @@
 ### Remaining (acceptable for prototype)
 - No animation controller integration yet
 - Spirit Vision uses Gizmos only (needs world-space UI overlay for builds)
-- `MissionScore` energy cost for Spirit Vision not deducted (SpiritVision doesn't call SpendEnergy — should wire or remove cost check)
+- `MissionScore` energy cost for Spirit Vision wired via `TrySpendEnergy`
 - Zombie attack stops agent but chase resume relies on SetState — verified working
 - No automated playmode tests (Unity Test Framework not in manifest)
 
