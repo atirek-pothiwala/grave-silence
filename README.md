@@ -4,6 +4,8 @@
 
 A third-person stealth action game inspired by **Aragami 2**, set in a post-apocalyptic zombie world. Move through ruined cities in the shadows, use umbral powers to eliminate the undead silently, and complete missions without raising the horde.
 
+**Visual style:** Low-poly, flat-shaded, no textures — see [Art Style Guide](docs/ART_STYLE.md).
+
 ## Core Concept
 
 | Aragami 2 | Grave Silence |
@@ -38,7 +40,6 @@ A third-person stealth action game inspired by **Aragami 2**, set in a post-apoc
 | Umbral Cloak | F |
 | Umbral Lure | R |
 | Umbral Strike | Right Mouse |
-| Pause | Escape |
 
 ## Project Setup
 
@@ -60,6 +61,14 @@ A third-person stealth action game inspired by **Aragami 2**, set in a post-apoc
 ### Quick Setup (Editor)
 
 Use **Grave Silence → Create Systems Hierarchy** and **Grave Silence → Create Player** from the menu bar.
+
+### Low-Poly Graphics
+
+1. **Grave Silence → Low Poly → Create Palette & Material**
+2. **Grave Silence → Low Poly → Generate Placeholder Scene**
+3. **Grave Silence → Low Poly → Generate Player Model**
+
+All meshes use flat shading and solid colors — no textures required.
 
 ### Scene Setup
 
